@@ -11,3 +11,14 @@
   max-width: 1000px;
   margin: 0 auto;
 }
+ul li a {
+  text-decoration: underline;
+}
+
+/* Video gallery style */
+.video-title{
+  background-color: purple;
+  padding:7px;
+  font-size: 20px;
+  color: white;
+}

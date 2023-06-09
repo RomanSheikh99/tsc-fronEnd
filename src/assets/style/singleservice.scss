@@ -1,12 +1,23 @@
 .singleService{
-    background: #ddd;
+    background: #F5F5F5;
     padding: 20px;
+    margin-top: 20px;
+    border-radius: 4px;
+    border:1px solid #ccc8c8;
 
-    .title{
-        text-transform: capitalize;
-    }
-
-    .list{
-        list-style: none;
-    }
+  
 }
+.title{
+    font-size: 20px;
+    color:#333333;
+}
+
+.list{
+    list-style: none;
+}
+ul li a{
+    text-decoration: none;
+}
+ul li a:hover{
+    text-decoration: underline;
+};

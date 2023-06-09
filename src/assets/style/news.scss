@@ -1,7 +1,15 @@
 .news{
-    background: #ddd;
+    background: #F5F5F5;
     padding: 20px;
-    display: grid;
-    grid-template-columns: 2fr 4fr .5fr;
     margin-top: 20px;
+    border-radius: 4px;
+    border:1px solid #ccc8c8;
+}
+.news p{
+    font-size: 14px;
+}
+.news span{
+    font-weight: bold;
+    margin-right: 3px;
+    color: black;
 }
