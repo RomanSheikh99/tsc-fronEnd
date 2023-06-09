@@ -11,10 +11,23 @@
   max-width: 1000px;
   margin: 0 auto;
 }
-ul li a {
-  text-decoration: underline;
+/* common button */
+.noticeBtn{
+  display: flex;
+  justify-content: end;
 }
-
+.noticeBtn button {
+  background-color: purple;
+  color: white;
+  padding:10px 25px;
+  border: none;
+}
+.noticeBtn button:hover {
+  background-color: purple;
+  color: white;
+  padding:10px 25px;
+  border: none;
+}
 /* Video gallery style */
 .video-title{
   background-color: purple;

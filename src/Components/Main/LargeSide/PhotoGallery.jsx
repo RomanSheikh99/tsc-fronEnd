@@ -1,24 +1,21 @@
 import React from 'react';
-import { Row } from 'react-bootstrap';
-import SingleVieoGallery from './SingleVieoGallery';
+import { Button, Row } from 'react-bootstrap';
 import SinglePhotoGallery from './SinglePhotoGallery';
 
 const PhotoGallery = () => {
     const photos = [
         {
-           Galleryphoto:<iframe width="350" height="250" src="https://www.youtube.com/embed/tgbNymZ7vqY">
-           </iframe>,
+           Galleryphoto:'https://satkhiratsc.gov.bd/200391/200391_media/gallery/MC_1638889423_2021-12-07.jpg'
           
         },
         {
-            Galleryphoto:<iframe width="350" height="250" src="https://www.youtube.com/embed/tgbNymZ7vqY">
-            </iframe>
+            Galleryphoto:'https://satkhiratsc.gov.bd/200391/200391_media/gallery/MC_1638889115_2021-12-07.jpg'
         }
     ]
     return (
         <div>
-            <h4 className='video-title'>Video Gallery</h4>
-            <div style={{marginTop: '5px'}}>
+            <h4 className='video-title'> Photo Gallery</h4>
+            <div style={{marginBottom: '10px'}}>
             <Row>
                 {photos.map((photo,i)=>{
                     return(<SinglePhotoGallery
@@ -27,6 +24,9 @@ const PhotoGallery = () => {
                 })}
             </Row>
         </div>
+        <div className="noticeBtn">
+                    <Button>Explore More</Button>
+                </div>
         </div>
     );
 };

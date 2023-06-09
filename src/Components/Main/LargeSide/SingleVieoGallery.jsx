@@ -4,7 +4,7 @@ import { Col, Row } from 'react-bootstrap';
 const SingleVieoGallery = ({video}) => {
     const {youtubeVideo} = video;
     return (
-        <Col style={{marginBottom: '10px'}} sm={6}>
+        <Col sm={6}>
         <div className="singleService">
           <h3 className="title"></h3>
           <Row>

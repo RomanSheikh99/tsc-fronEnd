@@ -7,7 +7,7 @@ const SingleService = ({service}) => {
   const {icon,name,ssc,hsc,others} = service
   return (
     <Col style={{marginBottom: '10px'}} sm={6}>
-      <div className="singleService">
+      <div className="singleService" id="singleServices">
         <h3 className="title">{name}</h3>
         <Row style={{marginBottom:'60px'}}>
           <Col sm={2}>

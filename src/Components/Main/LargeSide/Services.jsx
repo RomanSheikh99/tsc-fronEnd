@@ -47,7 +47,7 @@ const Services = () => {
         },
     ]
     return (
-        <div style={{marginTop: '15px'}}>
+        <div style={{marginTop: '15px', marginBottom:'20px'}}>
             <Row>
                 {services.map((service,i)=>{
                     return(<SingleService
