@@ -1,0 +1,16 @@
+.headLine{
+    .scroll {
+        background: #E6E7E8;
+        padding: 5px 0px 0px 0px;
+
+        .scroll > h3 {
+            font-weight: bold;
+            font-size: 22px;
+            line-height: 22px;
+
+            marquee {
+                padding: 5px;
+            }
+        }
+    }
+}

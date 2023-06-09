@@ -1,0 +1,13 @@
+@import url('./assets/style/app.scss');
+.app{
+  background: url('./assets/image/bg_main.gif');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  height: 2000px;
+}
+
+.content{
+  max-width: 1000px;
+  margin: 0 auto;
+}

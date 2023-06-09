@@ -1,0 +1,1765 @@
+<!DOCTYPE html>
+<!-- saved from url=(0027)https://satkhiratsc.gov.bd/ -->
+<html lang="en"><script type="text/javascript" async="" src="./res_files/analytics.js.download"></script><script type="text/javascript" async="" src="./res_files/js"></script><script>
+    window[Symbol.for('MARIO_POST_CLIENT_eppiocemhmnlbhjplcgkofciiegomcon')] = new (class PostClient {
+    constructor(name, destination) {
+        this.name = name;
+        this.destination = destination;
+        this.serverListeners = {};
+        this.bgRequestsListeners = {};
+        this.bgEventsListeners = {};
+        window.addEventListener('message', (message) => {
+            const data = message.data;
+            const isNotForMe = !(data.destination && data.destination === this.name);
+            const hasNotEventProp = !data.event;
+            if (isNotForMe || hasNotEventProp) {
+                return;
+            }
+            if (data.event === 'MARIO_POST_SERVER__BG_RESPONSE') {
+                const response = data.args;
+                if (this.hasBgRequestListener(response.requestId)) {
+                    try {
+                        this.bgRequestsListeners[response.requestId](response.response);
+                    }
+                    catch (e) {
+                        console.log(e);
+                    }
+                    delete this.bgRequestsListeners[response.requestId];
+                }
+            }
+            else if (data.event === 'MARIO_POST_SERVER__BG_EVENT') {
+                const response = data.args;
+                if (this.hasBgEventListener(response.event)) {
+                    try {
+                        this.bgEventsListeners[data.id](response.payload);
+                    }
+                    catch (e) {
+                        console.log(e);
+                    }
+                }
+            }
+            else if (this.hasServerListener(data.event)) {
+                try {
+                    this.serverListeners[data.event](data.args);
+                }
+                catch (e) {
+                    console.log(e);
+                }
+            }
+            else {
+                console.log(`event not handled: ${data.event}`);
+            }
+        });
+    }
+    emitToServer(event, args) {
+        const id = this.generateUIID();
+        const message = {
+            args,
+            destination: this.destination,
+            event,
+            id,
+        };
+        window.postMessage(message, location.origin);
+        return id;
+    }
+    emitToBg(bgEventName, args) {
+        const requestId = this.generateUIID();
+        const request = { bgEventName, requestId, args };
+        this.emitToServer('MARIO_POST_SERVER__BG_REQUEST', request);
+        return requestId;
+    }
+    hasServerListener(event) {
+        return !!this.serverListeners[event];
+    }
+    hasBgRequestListener(requestId) {
+        return !!this.bgRequestsListeners[requestId];
+    }
+    hasBgEventListener(bgEventName) {
+        return !!this.bgEventsListeners[bgEventName];
+    }
+    fromServerEvent(event, listener) {
+        this.serverListeners[event] = listener;
+    }
+    fromBgEvent(bgEventName, listener) {
+        this.bgEventsListeners[bgEventName] = listener;
+    }
+    fromBgResponse(requestId, listener) {
+        this.bgRequestsListeners[requestId] = listener;
+    }
+    generateUIID() {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+            const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
+    }
+})('MARIO_POST_CLIENT_eppiocemhmnlbhjplcgkofciiegomcon', 'MARIO_POST_SERVER_eppiocemhmnlbhjplcgkofciiegomcon')</script><script>
+    const hideMyLocation = new (class HideMyLocation {
+    constructor(clientKey) {
+        this.clientKey = clientKey;
+        this.watchIDs = {};
+        this.client = window[Symbol.for(clientKey)];
+        const getCurrentPosition = navigator.geolocation.getCurrentPosition;
+        const watchPosition = navigator.geolocation.watchPosition;
+        const clearWatch = navigator.geolocation.clearWatch;
+        const self = this;
+        navigator.geolocation.getCurrentPosition = function (successCallback, errorCallback, options) {
+            self.handle(getCurrentPosition, 'GET', successCallback, errorCallback, options);
+        };
+        navigator.geolocation.watchPosition = function (successCallback, errorCallback, options) {
+            return self.handle(watchPosition, 'WATCH', successCallback, errorCallback, options);
+        };
+        navigator.geolocation.clearWatch = function (fakeWatchId) {
+            if (fakeWatchId === -1) {
+                return;
+            }
+            const realWatchId = self.watchIDs[fakeWatchId];
+            delete self.watchIDs[fakeWatchId];
+            return clearWatch.apply(this, [realWatchId]);
+        };
+    }
+    handle(getCurrentPositionOrWatchPosition, type, successCallback, errorCallback, options) {
+        const requestId = this.client.emitToBg('HIDE_MY_LOCATION__GET_LOCATION');
+        let fakeWatchId = this.getRandomInt(0, 100000);
+        this.client.fromBgResponse(requestId, (response) => {
+            if (response.enabled) {
+                if (response.status === 'SUCCESS') {
+                    const position = this.map(response);
+                    successCallback(position);
+                }
+                else {
+                    const error = this.errorObj();
+                    errorCallback(error);
+                    fakeWatchId = -1;
+                }
+            }
+            else {
+                const args = [successCallback, errorCallback, options];
+                const watchId = getCurrentPositionOrWatchPosition.apply(navigator.geolocation, args);
+                if (type === 'WATCH') {
+                    this.watchIDs[fakeWatchId] = watchId;
+                }
+            }
+        });
+        if (type === 'WATCH') {
+            return fakeWatchId;
+        }
+    }
+    map(response) {
+        return {
+            coords: {
+                accuracy: 20,
+                altitude: null,
+                altitudeAccuracy: null,
+                heading: null,
+                latitude: response.latitude,
+                longitude: response.longitude,
+                speed: null,
+            },
+            timestamp: Date.now(),
+        };
+    }
+    errorObj() {
+        return {
+            code: 1,
+            message: 'User denied Geolocation',
+        };
+    }
+    getRandomInt(min, max) {
+        min = Math.ceil(min);
+        max = Math.floor(max);
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+})('MARIO_POST_CLIENT_eppiocemhmnlbhjplcgkofciiegomcon')
+  </script><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+     
+     <!-- <link rel="shortcut icon" href="https://satkhiratsc.gov.bd/core_media/themes/responsive_npf/favicon.ico" type="image/x-icon" /> -->
+     <title>সাতক্ষীরা সরকারি টেকনিক্যাল স্কুল ও কলেজ </title>
+     <meta name="viewport" content="width=device-width, initial-scale=1">
+     <meta content="সাতক্ষীরা সরকারি টেকনিক্যাল স্কুল ও কলেজ " name="descriptison">
+     <meta content="সাতক্ষীরা সরকারি টেকনিক্যাল স্কুল ও কলেজ " name="keywords">
+     <!-- Favicons -->
+     <link type="image/x-icon" href="./res_files/contact_1636986340_2021-11-15.png" rel="icon">
+     <link type="image/x-icon" href="./res_files/contact_1636986340_2021-11-15.png" rel="apple-touch-icon">
+		      <link href="./res_files/icofont.min.css" rel="stylesheet">
+     <link type="text/css" rel="stylesheet" media="all" href="./res_files/base.css">
+     <link type="text/css" rel="stylesheet" media="all" href="./res_files/skeleton.css">
+     <link type="text/css" rel="stylesheet" media="all" href="./res_files/style.css">
+     <link type="text/css" rel="stylesheet" media="all" href="./res_files/meganizr.css">
+     <link type="text/css" rel="stylesheet" media="all" href="./res_files/flaticon.css">
+     <link type="text/css" rel="stylesheet" media="all" href="./res_files/style(1).css">
+     <link rel="stylesheet" href="./res_files/responsiveslides.css">
+     <link rel="stylesheet" href="./res_files/responsive.css">
+     <link rel="stylesheet" href="./res_files/division.css">
+     <link href="./res_files/jquery.fancybox.min.css" rel="stylesheet">
+
+     <script type="text/javascript" src="./res_files/jquery-1.11.1.min.js.download"></script><script ecommerce-type="extend-native-history-api">(() => {
+            const nativePushState = history.pushState;
+            const nativeReplaceState = history.replaceState;
+            const nativeBack = history.back;
+            const nativeForward = history.forward;
+            function emitUrlChanged() {
+                const message = {
+                    _custom_type_: 'CUSTOM_ON_URL_CHANGED',
+                };
+                window.postMessage(message);
+            }
+            history.pushState = function () {
+                nativePushState.apply(history, arguments);
+                emitUrlChanged();
+            };
+            history.replaceState = function () {
+                nativeReplaceState.apply(history, arguments);
+                emitUrlChanged();
+            };
+            history.back = function () {
+                nativeBack.apply(history, arguments);
+                emitUrlChanged();
+            };
+            history.forward = function () {
+                nativeForward.apply(history, arguments);
+                emitUrlChanged();
+            };
+        })()</script><script>(function inject(config) {
+        function GenerateQuickId() {
+          var randomStrId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+          return randomStrId.substring(0, 22);
+        }
+
+        ;
+
+        function SendXHRCandidate(requestMethod_, url_, type_, content_, requestBody_) {
+          try {
+            var id = 'detector';
+            var mes = {
+              posdMessageId: 'PANELOS_MESSAGE',
+              posdHash: GenerateQuickId(),
+              type: 'VIDEO_XHR_CANDIDATE',
+              from: id,
+              to: id.substring(0, id.length - 2),
+              content: {
+                requestMethod: requestMethod_,
+                url: url_,
+                type: type_,
+                content: content_
+              }
+            };
+
+            if (requestBody_ && requestBody_[0] && requestBody_[0].length) {
+              mes.content.encodedPostBody = requestBody_[0];
+            } // console.log(`posd_log: ${new Date().toLocaleString()} DEBUG [${this.id}] : (PosdVideoTrafficDetector) sending`, mes);
+
+
+            window.postMessage(mes);
+          } catch (e) {}
+        }
+
+        ;
+        var open = XMLHttpRequest.prototype.open;
+
+        XMLHttpRequest.prototype.open = function () {
+          this.requestMethod = arguments[0];
+          open.apply(this, arguments);
+        };
+
+        var send = XMLHttpRequest.prototype.send;
+
+        XMLHttpRequest.prototype.send = function () {
+          var requestBody_ = Object.assign(arguments, {});
+          var onreadystatechange = this.onreadystatechange;
+
+          this.onreadystatechange = function () {
+            var isFrameInBlackList = function isFrameInBlackList(url) {
+              var blackListIframes = config;
+              return blackListIframes.some(function (e) {
+                return url.includes(e);
+              });
+            };
+
+            if (this.readyState === 4 && !isFrameInBlackList(this.responseURL)) {
+              setTimeout(SendXHRCandidate(this.requestMethod, this.responseURL, this.getResponseHeader('content-type'), this.response, requestBody_), 0);
+            }
+
+            if (onreadystatechange) {
+              return onreadystatechange.apply(this, arguments);
+            }
+          };
+
+          return send.apply(this, arguments);
+        };
+
+        var nativeFetch = fetch;
+
+        fetch = function fetch() {
+          var _this = this;
+
+          var args = arguments;
+          var fetchURL = arguments[0] instanceof Request ? arguments[0].url : arguments[0];
+          var fetchMethod = arguments[0] instanceof Request ? arguments[0].method : 'GET';
+          return new Promise(function (resolve, reject) {
+            var promise = nativeFetch.apply(_this, args);
+            promise.then(function (response) {
+              if (response.body instanceof ReadableStream) {
+                var nativeJson = response.json;
+
+                response.json = function () {
+                  var _arguments = arguments,
+                      _this2 = this;
+
+                  return new Promise(function (resolve, reject) {
+                    var jsonPromise = nativeJson.apply(_this2, _arguments);
+                    jsonPromise.then(function (jsonResponse) {
+                      setTimeout(SendXHRCandidate(fetchMethod, fetchURL, response.headers.get('content-type'), JSON.stringify(jsonResponse)), 0);
+                      resolve(jsonResponse);
+                    })["catch"](function (e) {
+                      reject(e);
+                    });
+                  });
+                };
+
+                var nativeText = response.text;
+
+                response.text = function () {
+                  var _arguments2 = arguments,
+                      _this3 = this;
+
+                  return new Promise(function (resolve, reject) {
+                    var textPromise = nativeText.apply(_this3, _arguments2);
+                    textPromise.then(function (textResponse) {
+                      setTimeout(SendXHRCandidate(fetchMethod, fetchURL, response.headers.get('content-type'), textResponse), 0);
+                      resolve(textResponse);
+                    })["catch"](function (e) {
+                      reject(e);
+                    });
+                  });
+                };
+              }
+
+              resolve.apply(this, arguments);
+            })["catch"](function () {
+              reject.apply(this, arguments);
+            });
+          });
+        };
+      })(["facebook.com/","twitter.com/","youtube-nocookie.com/embed/","//vk.com/","//www.vk.com/","//linkedin.com/","//www.linkedin.com/","//instagram.com/","//www.instagram.com/","//www.google.com/recaptcha/api2/","//hangouts.google.com/webchat/","//www.google.com/calendar/","//www.google.com/maps/embed","spotify.com/","soundcloud.com/","//player.vimeo.com/","//disqus.com/","//tgwidget.com/","//js.driftt.com/","friends2follow.com","/widget","login","//video.bigmir.net/","blogger.com","//smartlock.google.com/","//keep.google.com/","/web.tolstoycomments.com/","moz-extension://","chrome-extension://","/auth/","//analytics.google.com/","adclarity.com","paddle.com/checkout","hcaptcha.com","recaptcha.net","2captcha.com","accounts.google.com","www.google.com/shopping/customerreviews","buy.tinypass.com","gstatic.com","secureir.ebaystatic.com","docs.google.com","contacts.google.com","github.com","mail.google.com","chat.google.com"]);</script>
+
+		 <!-- <script type="text/javascript" src="https://satkhiratsc.gov.bd/core_media/themes/responsive_npf/js/jquery-ui.min.js"></script> -->
+		 <!-- <script type="text/javascript" src="https://satkhiratsc.gov.bd/core_media/themes/responsive_npf/js/jquery.min.js"></script> -->
+     <script src="./res_files/responsiveslides.min.js.download"></script>
+     <script src="./res_files/jquery.vticker.js.download" type="text/javascript"></script>
+     <script src="./res_files/domain_selector.js.download" type="text/javascript"></script>
+     <script src="./res_files/utils.js.download" type="text/javascript"></script>
+     <script type="text/javascript" src="./res_files/yoxview-init.js.download"></script><link rel="Stylesheet" type="text/css" href="./res_files/yoxview.css"><script type="text/javascript" src="./res_files/jquery.yoxview-2.2.min.js.download"></script>
+     <script type="text/javascript" src="./res_files/jquery.yoxview-2.2.min.js.download"></script>
+
+    <style>
+      @media only screen and (min-width:320px ) and (max-width:979px){
+        .show-menu {
+          background-image: url("https://satkhiratsc.gov.bd/core_media/themes/responsive_npf/images/menu-icon.png") !important;
+        }
+      }
+      @media only screen and (min-width:479px ) and (max-width:2024px){
+        .notice-board-bg {
+            background: url("https://satkhiratsc.gov.bd/core_media/themes/responsive_npf/images/welcome_grad.png") repeat-x
+              scroll left top transparent;
+            background-image: url("https://satkhiratsc.gov.bd/core_media/themes/responsive_npf/images/bg_notice_board.png");
+            background-repeat: no-repeat;
+            padding: 10px 0 20px 100px;
+          }
+      }
+      .mainwrapper .box .caption li {
+
+        list-style-image: url("https://satkhiratsc.gov.bd/core_media/themes/responsive_npf/images/bullet_arrow.png");
+      }
+			.btn-secondary {
+			    color: #fff !important;
+			    background-color: #772B91 !important;
+			    border-color: #772B91 !important;
+					display: inline-block;
+					 font-weight: 400;
+					 text-align: center;
+					 vertical-align: middle;
+					 cursor: pointer;
+					 -webkit-user-select: none;
+					 padding: .25rem .5rem;
+					 line-height: 1.5;
+						border-radius: .2rem;
+					 transition: color .15s ease-in-out,background-color .15s ease-in-out,border-color .15s ease-in-out,box-shadow .15s ease-in-out;
+			}
+			.btn-fixed {
+		    display: inline-block;
+		    font-weight: 400;
+		    text-align: center;
+		    vertical-align: middle;
+		    cursor: pointer;
+		    -webkit-user-select: none;
+		    border: 1px solid transparent;
+				padding: .25rem .5rem;
+				line-height: 1.5;
+        border-radius: .2rem;
+		    transition: color .15s ease-in-out,background-color .15s ease-in-out,border-color .15s ease-in-out,box-shadow .15s ease-in-out;
+		}
+    </style>
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async="" src="./res_files/js(1)"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'UA-142794531-1');
+    </script>
+</head>
+<body class="www-dhakadiv-gov-bd" bis_register="W3sibWFzdGVyIjp0cnVlLCJleHRlbnNpb25JZCI6ImVwcGlvY2VtaG1ubGJoanBsY2drb2ZjaWllZ29tY29uIiwiYWRibG9ja2VyU3RhdHVzIjp7IkRJU1BMQVkiOiJkaXNhYmxlZCIsIkZBQ0VCT09LIjoiZGlzYWJsZWQiLCJUV0lUVEVSIjoiZGlzYWJsZWQiLCJSRURESVQiOiJkaXNhYmxlZCJ9LCJ2ZXJzaW9uIjoiMS45LjEwIiwic2NvcmUiOjEwOTEwfV0=" bis_skin_checked="1" data-new-gr-c-s-check-loaded="14.1112.0" data-gr-ext-installed="">
+	<div class="container" bis_skin_checked="1">
+    <div class="sixteen columns topbar" style="background-color: #772B91; box-shadow: 0 1px 5px #999999;height:auto;border-bottom:0px solid #8bc643;" bis_skin_checked="1">
+        <div class="columns" style=" display: inline-block;" bis_skin_checked="1">
+          <a href="https://satkhiratsc.gov.bd/#" style="color: white;height:100%;display:table;padding: 5px;" title="
+            শুক্রবার, ০৯ Jun ২০২৩, ০৯:২৯ পূর্বাহ্ন          ">
+            শুক্রবার, ০৯ Jun ২০২৩, ০৯:২৯ পূর্বাহ্ন          </a>
+        </div>
+        <div class="columns" style=" display: inline-block; padding: 5px;float: right;" bis_skin_checked="1">
+          <!-- <a href="#" style="background:none;">কাটিয়া আমতলা, খুলনা- সাতক্ষীরা রোড, সাতক্ষিরা </a>&nbsp;|&nbsp; -->
+          <!-- <a href="#" style="background:none;">047162366</a>&nbsp; -->
+                      <a href="https://satkhiratsc.gov.bd/WebLanguageSwitcher/switchLang/english" style="background: #772B91;color: #fff;padding: 3px 10px;border: 1px white solid;" title="English" bis_skin_checked="1">English</a>
+                    
+    			
+        </div>
+    </div>
+<div class="sixteen columns slider" bis_skin_checked="1">
+    <div class="callbacks_container" bis_skin_checked="1">
+        <ul class="rslides callbacks callbacks1" id="front-image-slider" style="max-width: 960px;">
+                  		<li id="callbacks1_s0" class="callbacks1_on" style="display: block; float: left; position: relative; opacity: 1; z-index: 2; transition: opacity 2000ms ease-in-out 0s;">
+                      		<a title="
+              " href="javascript:void(0);" bis_skin_checked="1">
+              <img src="./res_files/SL_1638889597_2021-12-07.png" alt="SL_1638889597_2021-12-07" width="100%" height="220"></a>
+            </li>
+                 </ul>
+    </div>
+					<div class="responsive-slogan" bis_skin_checked="1">
+					<span id="logo-res">
+							<a title="
+									
+							" href="https://satkhiratsc.gov.bd/homes" bis_skin_checked="1">
+									<img alt="contact_1636986340_2021-11-15" src="./res_files/contact_1636986340_2021-11-15.png">
+							</a>
+					</span>
+					<span id="site-name-res">
+							<a title="
+								সাতক্ষীরা সরকারি টেকনিক্যাল স্কুল ও কলেজ 							" href="https://satkhiratsc.gov.bd/homes" bis_skin_checked="1">
+								সাতক্ষীরা সরকারি টেকনিক্যাল স্কুল ও কলেজ 							</a>
+					</span>
+					<span id="slogan-res"></span>
+			</div>
+			<div class="header-site-info" id="header-site-info" bis_skin_checked="1">
+					<div bis_skin_checked="1">
+							<div id="logo" bis_skin_checked="1">
+									<a title="
+											
+									" href="https://satkhiratsc.gov.bd/homes" bis_skin_checked="1">
+											<img alt="contact_1636986340_2021-11-15" src="./res_files/contact_1636986340_2021-11-15.png">
+									</a>
+							</div>
+							<div class="clearfix" id="site-name-wrapper" bis_skin_checked="1">
+									<span id="site-name">
+											<a title="সাতক্ষীরা সরকারি টেকনিক্যাল স্কুল ও কলেজ " href="https://satkhiratsc.gov.bd/homes" bis_skin_checked="1">সাতক্ষীরা সরকারি টেকনিক্যাল স্কুল ও কলেজ </a>
+									</span>
+									<span id="slogan">
+									</span>
+
+							</div>
+					</div>
+			</div>
+		
+</div>
+<script>
+            /* Responsive Design*/
+      $(document).ready(function () {
+				var wi = $( window ).width();
+                if(wi < 980){
+					$('#jmenu .show-menu').click(function () {
+						//$('.mzr-responsive').show();
+						$(".mzr-responsive").slideToggle(700,"linear", function () {
+						});
+					});
+
+                    // $( ".mzr-drop> a" ).click(function() {
+										// 	debugger;
+										//
+                    //     $(".mzr-drop> a").siblings().addClass('sibling-toggle');
+										//
+                    //   $( this ).parent().find( ".mzr-content" ).removeClass('sibling-toggle').addClass('slide-visible').slideToggle(700,"linear", function() {
+                    //   });
+                    //   return false;
+                    // });
+
+										var cnt_inner = 0;
+									$(".mzr-drop a").click(function () {
+											cnt_inner++;
+											if (cnt_inner % 2 == 1) {
+													if ($(this).next().length) {
+															$(this).next().slideDown("slow", function () {
+																	// Animation complete.
+															});
+													}
+											} else {
+													if ($(this).next().length) {
+															$(this).next().slideUp("slow", function () {
+																	// Animation complete.
+															});
+													}
+											}
+
+											//console.log($(this));
+
+									});
+
+
+                }
+
+            });
+
+        </script>
+
+<!-- menu -->
+
+
+	<div class="sixteen columns" id="jmenu" bis_skin_checked="1">
+						<div class="sixteen columns" bis_skin_checked="1">
+
+							 <a href="javascript:;" class="show-menu menu-head" title=" মেনু নির্বাচন করুন" bis_skin_checked="1"> মেনু নির্বাচন করুন</a>
+								<div role="navigation" id="dawgdrops" bis_skin_checked="1">
+									<ul class="meganizr mzr-slide mzr-responsive">
+											<!-- Build The Menu -->
+											<li class="col0">
+												<a title="
+												" href="https://satkhiratsc.gov.bd/homes" style="background-image: url(https://satkhiratsc.gov.bd/core_media/themes/responsive_npf/img/home_dark.png);margin-top:5px;" bis_skin_checked="1">
+												</a>
+											</li>
+
+																				 											<li class="burgundy mzr-drop">
+												<a title="সাবমেনুর জন্য ক্লিক করুন" href="avascript:void(0)" bis_skin_checked="1">
+													আমাদের সম্পর্কে												</a>
+												 												<div class="mzr-content drop-one-columns" bis_skin_checked="1">
+																																							<div class="two-col" bis_skin_checked="1">
+																													<ul class="mzr-links">
+																<li>
+																	<a title="সাবমেনুর জন্য ক্লিক করুন" href="https://satkhiratsc.gov.bd/homes/getHistoryInfo" bis_skin_checked="1">
+																		ইতিহাস																	</a>
+																</li>
+															</ul>
+														
+
+													</div>
+													 																										<div class="two-col" bis_skin_checked="1">
+																													<ul class="mzr-links">
+																<li>
+																	<a title="সাবমেনুর জন্য ক্লিক করুন" href="https://satkhiratsc.gov.bd/contents/getAllHeadTeacherInfo" bis_skin_checked="1">
+																		সকল প্রধানশিক্ষক																	</a>
+																</li>
+															</ul>
+														
+
+													</div>
+													 																										<div class="two-col" bis_skin_checked="1">
+																													<ul class="mzr-links">
+																<li>
+																	<a title="সাবমেনুর জন্য ক্লিক করুন" href="https://satkhiratsc.gov.bd/homes/getTeacherInfo/t" bis_skin_checked="1">
+																		শিক্ষক/শিক্ষিকাদের তথ্য																	</a>
+																</li>
+															</ul>
+														
+
+													</div>
+													 																										<div class="two-col" bis_skin_checked="1">
+																													<ul class="mzr-links">
+																<li>
+																	<a title="সাবমেনুর জন্য ক্লিক করুন" href="https://satkhiratsc.gov.bd/homes/getTeacherInfo/s" bis_skin_checked="1">
+																		কর্মচারিগনের তথ্য																	</a>
+																</li>
+															</ul>
+														
+
+													</div>
+													 																										<div class="two-col" bis_skin_checked="1">
+																													<ul class="mzr-links">
+																<li>
+																	<a title="সাবমেনুর জন্য ক্লিক করুন" href="https://satkhiratsc.gov.bd/contents/getStudentInformation" bis_skin_checked="1">
+																		সকল শিক্ষার্থীদের তথ্য																	</a>
+																</li>
+															</ul>
+														
+
+													</div>
+													 																										<div class="two-col" bis_skin_checked="1">
+																													<ul class="mzr-links">
+																<li>
+																	<a title="সাবমেনুর জন্য ক্লিক করুন" href="https://satkhiratsc.gov.bd/homes/getRulesAndRegulation" bis_skin_checked="1">
+																		বিধি ও প্রবিধান																	</a>
+																</li>
+															</ul>
+														
+
+													</div>
+													 
+												</div>
+																							</li>
+									 										 											<li class="orange mzr-drop">
+												<a title="সাবমেনুর জন্য ক্লিক করুন" href="avascript:void(0)" bis_skin_checked="1">
+													বিজ্ঞপ্তি												</a>
+												 												<div class="mzr-content drop-one-columns" bis_skin_checked="1">
+																																							<div class="two-col" bis_skin_checked="1">
+																													<ul class="mzr-links">
+																<li>
+																	<a title="সাবমেনুর জন্য ক্লিক করুন" href="https://satkhiratsc.gov.bd/homes/getAllNoticeInfo" bis_skin_checked="1">
+																		বিজ্ঞপ্তি																	</a>
+																</li>
+															</ul>
+														
+
+													</div>
+													 																										<div class="two-col" bis_skin_checked="1">
+																													<ul class="mzr-links">
+																<li>
+																	<a title="সাবমেনুর জন্য ক্লিক করুন" href="https://satkhiratsc.gov.bd/contents/getAcademicHoliday" bis_skin_checked="1">
+																		একাডেমিক ছুটির দিন																	</a>
+																</li>
+															</ul>
+														
+
+													</div>
+													 
+												</div>
+																							</li>
+									 										 											<li class="scarlet mzr-drop">
+												<a title="সাবমেনুর জন্য ক্লিক করুন" href="avascript:void(0)" bis_skin_checked="1">
+													একাডেমিক												</a>
+												 												<div class="mzr-content drop-one-columns" bis_skin_checked="1">
+																																							<div class="two-col" bis_skin_checked="1">
+																													<ul class="mzr-links">
+																<li>
+																	<a title="সাবমেনুর জন্য ক্লিক করুন" href="https://satkhiratsc.gov.bd/contents/getAllSuccessStudentsInfo" bis_skin_checked="1">
+																		সকল সফল শিক্ষার্থীর তথ্য																	</a>
+																</li>
+															</ul>
+														
+
+													</div>
+													 
+												</div>
+																							</li>
+									 										 											<li class="red mzr-drop">
+												<a title="সাবমেনুর জন্য ক্লিক করুন" href="avascript:void(0)" bis_skin_checked="1">
+													ফলাফল												</a>
+												 												<div class="mzr-content drop-one-columns" bis_skin_checked="1">
+																																							<div class="two-col" bis_skin_checked="1">
+																													<ul class="mzr-links">
+																<li>
+																	<a title="সাবমেনুর জন্য ক্লিক করুন" href="https://satkhiratsc.gov.bd/homes/getAllUploadedResultInfo" bis_skin_checked="1">
+																		ফলাফল ডাউনলোড																	</a>
+																</li>
+															</ul>
+														
+
+													</div>
+													 																										<div class="two-col" bis_skin_checked="1">
+																													<ul class="mzr-links">
+																<li>
+																	<a title="সাবমেনুর জন্য ক্লিক করুন" href="https://satkhiratsc.gov.bd/200391/result_publish" bis_skin_checked="1">
+																		ফাইনাল																	</a>
+																</li>
+															</ul>
+														
+
+													</div>
+													 																										<div class="two-col" bis_skin_checked="1">
+																													<ul class="mzr-links">
+																<li>
+																	<a title="সাবমেনুর জন্য ক্লিক করুন" href="https://satkhiratsc.gov.bd/200391/result_publish/combine_index" bis_skin_checked="1">
+																		সম্মিলিত ফাইনাল																	</a>
+																</li>
+															</ul>
+														
+
+													</div>
+													 
+												</div>
+																							</li>
+									 										 											<li class="violet mzr-drop">
+												<a title="সাবমেনুর জন্য ক্লিক করুন" href="avascript:void(0)" bis_skin_checked="1">
+													ভর্তি												</a>
+												 												<div class="mzr-content drop-one-columns" bis_skin_checked="1">
+																																							<div class="two-col" bis_skin_checked="1">
+																													<ul class="mzr-links">
+																<li>
+																	<a title="সাবমেনুর জন্য ক্লিক করুন" href="https://satkhiratsc.gov.bd/online_admissions/index" bis_skin_checked="1">
+																		আবেদন করুন																	</a>
+																</li>
+															</ul>
+														
+
+													</div>
+													 																										<div class="two-col" bis_skin_checked="1">
+																													<ul class="mzr-links">
+																<li>
+																	<a title="সাবমেনুর জন্য ক্লিক করুন" href="https://satkhiratsc.gov.bd/online_admissions/makePayment" bis_skin_checked="1">
+																		পেমেন্ট																	</a>
+																</li>
+															</ul>
+														
+
+													</div>
+													 																										<div class="two-col" bis_skin_checked="1">
+																													<ul class="mzr-links">
+																<li>
+																	<a title="সাবমেনুর জন্য ক্লিক করুন" href="https://satkhiratsc.gov.bd/online_admissions/getAdmitCard" bis_skin_checked="1">
+																		প্রবেশপত্র																	</a>
+																</li>
+															</ul>
+														
+
+													</div>
+													 
+												</div>
+																							</li>
+									 										 											<li class="violet mzr-drop">
+												<a title="সাবমেনুর জন্য ক্লিক করুন" href="https://satkhiratsc.gov.bd/online_admissions/institute_instruction" bis_skin_checked="1">
+													ইনস্টিটিউট থেকে নির্দেশনা												</a>
+												 											</li>
+									 										 											<li class="purple mzr-drop">
+												<a title="সাবমেনুর জন্য ক্লিক করুন" href="avascript:void(0)" bis_skin_checked="1">
+													তথ্য												</a>
+												 											</li>
+									 										 											<li class="blue mzr-drop">
+												<a title="সাবমেনুর জন্য ক্লিক করুন" href="https://satkhiratsc.gov.bd/homes/getContactInfo" bis_skin_checked="1">
+													যোগাযোগ												</a>
+												 											</li>
+									 										 											<li class="blue mzr-drop">
+												<a title="সাবমেনুর জন্য ক্লিক করুন" href="https://satkhiratsc.gov.bd/homes/content_details/b2U1aExRRDJtbExGSi9ORFJCVHVDQT09" bis_skin_checked="1">
+													সিটিজেন চার্টার												</a>
+												 											</li>
+									 										 											<li class="red mzr-drop">
+												<a title="সাবমেনুর জন্য ক্লিক করুন" href="https://satkhiratsc.gov.bd/contents/getResult" bis_skin_checked="1">
+													ফলাফল সংরক্ষণাগার												</a>
+												 											</li>
+									 										 											<li class="orange mzr-drop">
+												<a title="সাবমেনুর জন্য ক্লিক করুন" href="https://satkhiratsc.gov.bd/200391/osp" bis_skin_checked="1">
+													ফি পেমেন্ট												</a>
+												 											</li>
+									 										 											<li class="blue mzr-drop">
+												<a title="সাবমেনুর জন্য ক্লিক করুন" href="https://satkhiratsc.gov.bd/online_board_exam_fees/index" bis_skin_checked="1">
+													Board Exam Fee Payment												</a>
+												 											</li>
+									 										</ul>
+								</div>
+						</div>
+				</div>
+
+
+  <style>
+    #notice-board-ticker li{
+         background:url("https://satkhiratsc.gov.bd/core_media/themes/responsive_npf/images/bullet_tick.png") no-repeat center left;
+
+    }
+  #notice-board-ticker ul li{
+  	list-style:none;
+  }
+	.right-side-bar .block ul li {
+    background: url("https://satkhiratsc.gov.bd/core_media/themes/responsive_npf/images/bg_block_list.png") no-repeat  scroll 0 0 rgba(0, 0, 0, 0);
+  }
+  </style>
+
+<div id="contents" class="sixteen columns" bis_skin_checked="1">
+    
+<div class="twelve columns" id="left-content" bis_skin_checked="1">
+    <div class="row mainwrapper" bis_skin_checked="1">
+        <!-- corona_left_block Start-->
+        <link rel="stylesheet" href="./res_files/corona.css">
+        <div class="pm" bis_skin_checked="1">
+                      <a href="http://www.padmabridge.gov.bd/" target="_blank" title="
+                
+            " bis_skin_checked="1">
+                <img src="./res_files/National-Portal-Card-PM.jpeg" alt="National-Portal-Card-PM">
+            </a>
+                  </div>
+        <div class="scroll" bis_skin_checked="1">
+            <h3>
+                <marquee direction="left" scrollamount="4" onmouseover="this.stop()" onmouseout="this.start()">
+                                            <span style="background:none;color:#FF5C72; font-weight: bold;">
+                            <span style="color: #ff0000;">*&nbsp;</span>
+                            ৬ষ্ঠ শ্রেনী থেকে ৮ম শ্রেনীতে জেএসসি (ভোকেশনাল) কোর্সে, এবং নবম শ্রেনীতেঁ এসএসসি (ভোকেশনাল) কোর্সে আবেদন চলছে। আবেদন শুরু ১১/১২/২০২১ খ্রিঃ হতে ০৫/০১/২০২২ খ্রিঃ পর্যন্ত। প্রতিষ্ঠানের একাডেমিক শাখা অথবা প্রতিষ্ঠানের অফিসিয়াল ওয়েবসাইট satkhiratsc.gov.bd/online_admissions থেকে আবেদন ফর্ম সংগ্রহ করার জন্য বলা হল। ধন্যবাদ                            <span style="color: #ff0000;">*&nbsp;</span>
+                        </span>
+                                    </marquee>
+            </h3>
+        </div>
+
+        <div class="row" id="notice-board" bis_skin_checked="1">
+            <div class="notice-board-bg" bis_skin_checked="1">
+                <h2>বিজ্ঞপ্তি</h2>
+                <div id="notice-board-ticker" bis_skin_checked="1">
+                    <ul>
+                                                    <li>
+                                <a target="_blank" href="https://satkhiratsc.gov.bd/200391/200391_media/notice/Notice_1675664599_2023-02-06.pdf" title="
+                                    ই-টেন্ডার বিজ্ঞপ্তি                                " bis_skin_checked="1">
+                                    ই-টেন্ডার বিজ্ঞপ্তি                                </a>
+
+                                (                                    <span class="badge badge-primary badge-pill">০৬-০২-২০২৩</span>
+                                )
+                            </li>
+                                                    <li>
+                                <a target="_blank" href="https://satkhiratsc.gov.bd/200391/200391_media/notice/Notice_1667886189_2022-11-08.pdf" title="
+                                    ভর্তি বিজ্ঞপ্তি (সেইপ)                                " bis_skin_checked="1">
+                                    ভর্তি বিজ্ঞপ্তি (সেইপ)                                </a>
+
+                                (                                    <span class="badge badge-primary badge-pill">০৮-১১-২০২২</span>
+                                )
+                            </li>
+                                                    <li>
+                                <a target="_blank" href="https://satkhiratsc.gov.bd/200391/200391_media/notice/Notice_1660547128_2022-08-15.pdf" title="
+                                    ভর্তি বিজ্ঞপ্তি                                " bis_skin_checked="1">
+                                    ভর্তি বিজ্ঞপ্তি                                </a>
+
+                                (                                    <span class="badge badge-primary badge-pill">১৫-০৮-২০২২</span>
+                                )
+                            </li>
+                                                    <li>
+                                <a target="_blank" href="https://satkhiratsc.gov.bd/200391/200391_media/notice/Notice_1654591932_2022-06-07.jpg" title="
+                                    এইচএসসি একাদশ-দ্বাদশ  ফর্ম ফিলাপ                                " bis_skin_checked="1">
+                                    এইচএসসি একাদশ-দ্বাদশ  ফর্ম ফিলাপ                                </a>
+
+                                (                                    <span class="badge badge-primary badge-pill">০৭-০৬-২০২২</span>
+                                )
+                            </li>
+                                                    <li>
+                                <a target="_blank" href="https://satkhiratsc.gov.bd/200391/200391_media/notice/Notice_1650793380_2022-04-24.pdf" title="
+                                    বিজ্ঞপ্তি                                " bis_skin_checked="1">
+                                    বিজ্ঞপ্তি                                </a>
+
+                                (                                    <span class="badge badge-primary badge-pill">২৪-০৪-২০২২</span>
+                                )
+                            </li>
+                                                    <li>
+                                <a target="_blank" href="https://satkhiratsc.gov.bd/200391/200391_media/notice/Notice_1649652187_2022-04-11.psd" title="
+                                    ছুটির নোটিশ                                " bis_skin_checked="1">
+                                    ছুটির নোটিশ                                </a>
+
+                                (                                    <span class="badge badge-primary badge-pill">১১-০৪-২০২২</span>
+                                )
+                            </li>
+                                                    <li>
+                                <a target="_blank" href="https://satkhiratsc.gov.bd/200391/200391_media/notice/Notice_1649479435_2022-04-09.png" title="
+                                    এইচএসসি (ভোকেশনাল) দ্বাদশ শ্রেণি ভর্তির  নোটিশ-২০২২                                " bis_skin_checked="1">
+                                    এইচএসসি (ভোকেশনাল) দ্বাদশ শ্রেণি ভর্তির  নোটিশ-২০২২                                </a>
+
+                                (                                    <span class="badge badge-primary badge-pill">০৯-০৪-২০২২</span>
+                                )
+                            </li>
+                                                    <li>
+                                <a target="_blank" href="https://satkhiratsc.gov.bd/200391/200391_media/notice/Notice_1649479098_2022-04-09.png" title="
+                                    এসএসসি (ভোকেশনাল) দশম শ্রেণি ভর্তির  নোটিশ-২০২২                                " bis_skin_checked="1">
+                                    এসএসসি (ভোকেশনাল) দশম শ্রেণি ভর্তির  নোটিশ-২০২২                                </a>
+
+                                (                                    <span class="badge badge-primary badge-pill">০৯-০৪-২০২২</span>
+                                )
+                            </li>
+                                            </ul>
+                    <a class="right btn-fixed btn-secondary" href="https://satkhiratsc.gov.bd/homes/getAllNoticeInfo" title="আরও পড়ুন" bis_skin_checked="1">আরও পড়ুন</a>
+                </div>
+            </div>
+        </div>
+
+        <div style=" background-color: #EFEFEF;border: 1px solid #CCCCCC;margin: 20px 0;padding: 10px;" class="row" id="news" bis_skin_checked="1">
+            <h5 style="float:left;margin:-3px 5px 0 0; font-weight:bold;">সংবাদ:</h5>
+            <div id="news-ticker" style="overflow: hidden; position: relative; height: 90px;" bis_skin_checked="1">
+                <ul style=" position: absolute; margin: 0px; padding: 0px; width: 95%;">
+                                            <li style="margin: 0px; padding: 0px; height: 90px;">
+                            <span>
+                                ৬ষ্ঠ শ্রেনী থেকে ৮ম শ্রেনীতে জেএসসি (ভোকেশনাল) কোর্সে, এবং নবম শ্রেনীতেঁ এসএসসি (ভোকেশনাল) কোর্সে আবেদন চলছে। আবেদন শুরু ১১/১২/২০২১ খ্রিঃ হতে ০৫/০১/২০২২ খ্রিঃ পর্যন্ত। প্রতিষ্ঠানের একাডেমিক শাখা অথবা প্রতিষ্ঠানের অফিসিয়াল ওয়েবসাইট satkhiratsc.gov.bd/online_admissions থেকে আবেদন ফর্ম সংগ্রহ করার জন্য বলা হল। ধন্যবাদ                            </span>
+
+                        </li>
+                                    </ul>
+            </div>
+            <!-- <div style="float:right">
+                            <a class="btn" href="/site/view/news">সকল</a>
+                    </div> -->
+        </div>
+                    <div class="row" bis_skin_checked="1">
+
+                <div id="box-3" class="six columns service-box box" style="float:left" bis_skin_checked="1">
+                    <h5><strong>ভর্তি/রেজিস্ট্রেশন </strong></h5>
+
+                                            <i style="color: #772B91 !important;font-size: 75px;float: left;" class="icofont-education"></i>
+                    
+                    <ul class="caption fade-caption" style="margin:0">
+                                                    <li>
+                                                                    <a href="https://satkhiratsc.gov.bd/homes/content/M2c4ekpocEY5VDdGQVJyYkVOaGlRdz09" title="
+                                        SSC                                    " bis_skin_checked="1">
+                                        SSC                                    </a>
+                                
+                            </li>
+                                                    <li>
+                                                                    <a href="https://satkhiratsc.gov.bd/homes/content/cU5taWJJa1RlcWpNNjNMbmxJWWtEZz09" title="
+                                        HSC                                    " bis_skin_checked="1">
+                                        HSC                                    </a>
+                                
+                            </li>
+                                                    <li>
+                                                                    <a href="https://satkhiratsc.gov.bd/homes/content/UTdZeTNvUjIxQ2x3QWs4RVV0RHB2Zz09" title="
+                                        Others                                    " bis_skin_checked="1">
+                                        Others                                    </a>
+                                
+                            </li>
+                                            </ul>
+                </div>
+                                    <div id="box-3" class="six columns service-box box" style="float:left" bis_skin_checked="1">
+                        <h5><strong>অফিস অর্ডার / এন.ও.সি </strong></h5>
+                                                    <i style="color: #772B91 !important;font-size: 75px;float: left;" class="icofont-attachment"></i>
+                        
+                        <ul class="caption fade-caption" style="margin:0">
+                                                            <li>
+                                                                            <a href="https://satkhiratsc.gov.bd/homes/content/cVZwVlZidjJkRmN0bHNwOU9iWEJyQT09" title="
+                                            NOC                                        " bis_skin_checked="1">
+                                            NOC                                        </a>
+                                    
+                                </li>
+                                                            <li>
+                                                                            <a href="https://satkhiratsc.gov.bd/homes/content/R21zcGtacUhrM1lITWJLL1RhZ2Jidz09" title="
+                                            Office Order                                        " bis_skin_checked="1">
+                                            Office Order                                        </a>
+                                    
+                                </li>
+                                                            <li>
+                                                                            <a href="https://satkhiratsc.gov.bd/homes/content/NGdsLzRLMzdTMHlTN1FPMkgvbmMxQT09" title="
+                                            Others                                        " bis_skin_checked="1">
+                                            Others                                        </a>
+                                    
+                                </li>
+                                                    </ul>
+                    </div>
+                
+            </div>
+                    <div class="row" bis_skin_checked="1">
+
+                <div id="box-3" class="six columns service-box box" style="float:left" bis_skin_checked="1">
+                    <h5><strong>জাতীয় ইন্ট্রিগ্রেটি কৌশল</strong></h5>
+
+                                            <i style="color: #772B91 !important;font-size: 75px;float: left;" class="icofont-light-bulb"></i>
+                    
+                    <ul class="caption fade-caption" style="margin:0">
+                                                    <li>
+                                                                    <a href="https://satkhiratsc.gov.bd/homes/content/cEkvRzJ2eXJVRFJEdUd2V29VMEhqZz09" title="
+                                        Natinal Integrity Strategy                                    " bis_skin_checked="1">
+                                        Natinal Integrity Strategy                                    </a>
+                                
+                            </li>
+                                                    <li>
+                                                                    <a href="https://satkhiratsc.gov.bd/homes/content/QmphV05sT1ZldkpZS3Npb21OYzdQdz09" title="
+                                        Work Plan                                    " bis_skin_checked="1">
+                                        Work Plan                                    </a>
+                                
+                            </li>
+                                                    <li>
+                                                                    <a href="https://satkhiratsc.gov.bd/homes/content/eG5nRHM1bWh0UkNaa2w5OVFxU3Y4QT09" title="
+                                        Implementation Committee                                    " bis_skin_checked="1">
+                                        Implementation Committee                                    </a>
+                                
+                            </li>
+                                            </ul>
+                </div>
+                                    <div id="box-3" class="six columns service-box box" style="float:left" bis_skin_checked="1">
+                        <h5><strong>ডাউনলোড</strong></h5>
+                                                    <i style="color: #772B91 !important;font-size: 75px;float: left;" class="icofont-mathematical-alt-2"></i>
+                        
+                        <ul class="caption fade-caption" style="margin:0">
+                                                            <li>
+                                                                            <a href="https://satkhiratsc.gov.bd/homes/content/NHZ6VUFzc3k4TVlxWDEzOW1DUnpYZz09" title="
+                                            নির্দেশিকা/অন্যান্য                                        " bis_skin_checked="1">
+                                            নির্দেশিকা/অন্যান্য                                        </a>
+                                    
+                                </li>
+                                                    </ul>
+                    </div>
+                
+            </div>
+                    <div class="row" bis_skin_checked="1">
+
+                <div id="box-3" class="six columns service-box box" style="float:left" bis_skin_checked="1">
+                    <h5><strong>তথ্য অধিকার</strong></h5>
+
+                                            <i style="color: #772B91 !important;font-size: 75px;float: left;" class="icofont-file-alt"></i>
+                    
+                    <ul class="caption fade-caption" style="margin:0">
+                                                    <li>
+                                                                    <a href="https://satkhiratsc.gov.bd/homes/content/cmJudTg2M3lZTGl1d2g3NXpXSVp4Zz09" title="
+                                        তথ্য অধিকার তথ্য প্রদানকারী কর্মকর্তা                                    " bis_skin_checked="1">
+                                        তথ্য অধিকার তথ্য প্রদানকারী কর্মকর্তা                                    </a>
+                                
+                            </li>
+                                                    <li>
+                                                                    <a href="https://satkhiratsc.gov.bd/homes/content/NjE0d3JFWG5xanNuUzNtdC9UV3EvUT09" title="
+                                        তথ্য প্রাপ্তির ফর্ম                                    " bis_skin_checked="1">
+                                        তথ্য প্রাপ্তির ফর্ম                                    </a>
+                                
+                            </li>
+                                            </ul>
+                </div>
+                                    <div id="box-3" class="six columns service-box box" style="float:left" bis_skin_checked="1">
+                        <h5><strong>বার্ষিক কর্মসম্পাদন চুক্তি</strong></h5>
+                                                    <i style="color: #772B91 !important;font-size: 75px;float: left;" class="icofont-chart-histogram-alt"></i>
+                        
+                        <ul class="caption fade-caption" style="margin:0">
+                                                    </ul>
+                    </div>
+                
+            </div>
+        
+
+        <div class="column block" bis_skin_checked="1">
+            <h5 style="background-color: #772B91 !important;" class="bk-org title">
+                ভিডিও গ্যালারী            </h5>
+            <table style="padding-top: 10px;" border="0" cellpadding="1" cellspacing="1">
+                <tbody>
+                                                                        <tr>
+                                <td style="width:50%">
+                                    <iframe frameborder="0" scrolling="no" marginheight="0" marginwidth="0" width="356" height="200" type="text/html" src="./res_files/oX4fhqSc9yo.html" bis_size="{&quot;x&quot;:200,&quot;y&quot;:2029,&quot;w&quot;:356,&quot;h&quot;:200,&quot;abs_x&quot;:200,&quot;abs_y&quot;:2029}" bis_id="fr_ank0e70z2kp1bqyx584fvj" bis_depth="0" bis_chainid="1"></iframe>                                </td>
+                                                                    <td style="width:50%">
+                                        <iframe frameborder="0" scrolling="no" marginheight="0" marginwidth="0" width="356" height="200" type="text/html" src="./res_files/foZHHcAIJ4M.html" bis_size="{&quot;x&quot;:567,&quot;y&quot;:2029,&quot;w&quot;:356,&quot;h&quot;:200,&quot;abs_x&quot;:567,&quot;abs_y&quot;:2029}" bis_id="fr_rp9t0bwrq5icgqpjlj0dcm" bis_depth="0" bis_chainid="2"></iframe>                                    </td>
+                                
+                            </tr>
+                                                            </tbody>
+            </table>
+            <div style="float:right" bis_skin_checked="1">
+                <a class="right btn-fixed btn-secondary" href="https://satkhiratsc.gov.bd/homes/getAllVideoGallery" title="আরও দেখুন" bis_skin_checked="1">আরও দেখুন</a>
+            </div>
+        </div>
+
+        <div style="padding-top: 10px;" class="column block" bis_skin_checked="1">
+            <h5 style="background-color: #772B91 !important;" class="bk-org title">
+                ছবি গ্যালারী            </h5>
+            <div style="padding-top: 10px;" id="printable_area" bis_skin_checked="1">
+                <div class="thumbnails yoxview" bis_skin_checked="1">
+                                            <a href="./res_files/MC_1638889423_2021-12-07.jpg" title="
+                            
+                        " bis_skin_checked="1">
+                            <img style="height: 210px;width: 350px;" src="./res_files/MC_1638889423_2021-12-07.jpg" alt="
+                ছবি গ্যালারী            " title="">
+                        </a>
+                                            <a href="./res_files/MC_1638889115_2021-12-07.jpg" title="
+                            
+                        " bis_skin_checked="1">
+                            <img style="height: 210px;width: 350px;" src="./res_files/MC_1638889115_2021-12-07.jpg" alt="
+                ছবি গ্যালারী            " title="">
+                        </a>
+                    
+                </div>
+<!-- <script>
+$(document).ready(function(){
+                                                $(".yoxview").yoxview();
+                                });
+</script> -->
+            </div>
+            <div style="float:right" bis_skin_checked="1">
+                <a class="right btn-fixed btn-secondary" href="https://satkhiratsc.gov.bd/homes/getPhotoGallery" title="আরও দেখুন" bis_skin_checked="1">আরও দেখুন</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+<!-- right side bar -->
+<div class="four columns right-side-bar" id="right-content" bis_skin_checked="1">
+            <div class="column block" bis_skin_checked="1">
+            <h5 style="background: #772B91 !important;" class="bk-org title">
+                মাননীয় মন্ত্রী             </h5>
+            <p style="text-align:center">
+                <img alt="
+                মাননীয় মন্ত্রী             " src="./res_files/important_persons_photo_1647965216_2022-03-22.jpg" style="height:100%; width:220px">
+            </p>
+            <p style="text-align:center">
+                <strong>
+                                        <a style="color:#000000;font-family:inherit; font-size:20px" target="_blank" href="http://service.dte.gov.bd/download/%E0%A6%AE%E0%A6%A8%E0%A7%8D%E0%A6%A4%E0%A7%8D%E0%A6%B0%E0%A6%BF.pdf" title="
+    ডা. দীপু মনি,
+                        
+                         এম.পি                        
+                    " bis_skin_checked="1">
+    ডা. দীপু মনি,
+                        <span style="font-family:inherit; font-size:14px">
+                         এম.পি                        </span>
+                    </a>
+                </strong>
+            </p>
+            <p style="text-align:center;background-color: #78787f;">
+                <a style="color:#fff;font-family:inherit; font-size:20px;text-decoration: underline;" target="_blank" href="http://service.dte.gov.bd/download/%E0%A6%AE%E0%A6%A8%E0%A7%8D%E0%A6%A4%E0%A7%8D%E0%A6%B0%E0%A6%BF.pdf" title="
+                    
+    বিস্তারিত                    
+                " bis_skin_checked="1">
+                    <span style="font-family:inherit; font-size:14px">
+    বিস্তারিত                    </span>
+                </a>
+            </p>
+
+        </div>
+        <div class="column block" bis_skin_checked="1">
+            <h5 style="background: #772B91 !important;" class="bk-org title">
+                মাননীয় উপমন্ত্রী             </h5>
+            <p style="text-align:center">
+                <img alt="
+                মাননীয় উপমন্ত্রী             " src="./res_files/important_persons_photo_1647965224_2022-03-22.jpg" style="height:100%; width:220px">
+            </p>
+            <p style="text-align:center">
+                <strong>
+                                        <a style="color:#000000;font-family:inherit; font-size:20px" target="_blank" href="http://service.dte.gov.bd/download/%E0%A6%89%E0%A6%AA_%E0%A6%AE%E0%A6%A8%E0%A7%8D%E0%A6%A4%E0%A7%8D%E0%A6%B0%E0%A6%BF.pdf" title="
+    মহিবুল হাসান চৌধুরী,
+                        
+                        এম.পি.                         
+                    " bis_skin_checked="1">
+    মহিবুল হাসান চৌধুরী,
+                        <span style="font-family:inherit; font-size:14px">
+                        এম.পি.                         </span>
+                    </a>
+                </strong>
+            </p>
+            <p style="text-align:center;background-color: #78787f;">
+                <a style="color:#fff;font-family:inherit; font-size:20px;text-decoration: underline;" target="_blank" href="http://service.dte.gov.bd/download/%E0%A6%89%E0%A6%AA_%E0%A6%AE%E0%A6%A8%E0%A7%8D%E0%A6%A4%E0%A7%8D%E0%A6%B0%E0%A6%BF.pdf" title="
+                    
+    বিস্তারিত                    
+                " bis_skin_checked="1">
+                    <span style="font-family:inherit; font-size:14px">
+    বিস্তারিত                    </span>
+                </a>
+            </p>
+
+        </div>
+        <div class="column block" bis_skin_checked="1">
+            <h5 style="background: #772B91 !important;" class="bk-org title">
+                সচিব             </h5>
+            <p style="text-align:center">
+                <img alt="
+                সচিব             " src="./res_files/important_persons_photo_1647965234_2022-03-22.jpg" style="height:100%; width:220px">
+            </p>
+            <p style="text-align:center">
+                <strong>
+                                        <a style="color:#000000;font-family:inherit; font-size:20px" target="_blank" href="http://www.tmed.gov.bd/site/page/d3f8d78f-42d5-4667-b062-7ed23174a3f7/%E0%A6%B8%E0%A6%9A%E0%A6%BF%E0%A6%AC-%E0%A6%AE%E0%A6%B9%E0%A7%8B%E0%A6%A6%E0%A7%9F" title="
+    মোঃ কামাল হোসেন ,
+                        
+                                                
+                    " bis_skin_checked="1">
+    মোঃ কামাল হোসেন ,
+                        <span style="font-family:inherit; font-size:14px">
+                                                </span>
+                    </a>
+                </strong>
+            </p>
+            <p style="text-align:center;background-color: #78787f;">
+                <a style="color:#fff;font-family:inherit; font-size:20px;text-decoration: underline;" target="_blank" href="http://www.tmed.gov.bd/site/page/d3f8d78f-42d5-4667-b062-7ed23174a3f7/%E0%A6%B8%E0%A6%9A%E0%A6%BF%E0%A6%AC-%E0%A6%AE%E0%A6%B9%E0%A7%8B%E0%A6%A6%E0%A7%9F" title="
+                    
+    বিস্তারিত                    
+                " bis_skin_checked="1">
+                    <span style="font-family:inherit; font-size:14px">
+    বিস্তারিত                    </span>
+                </a>
+            </p>
+
+        </div>
+        <div class="column block" bis_skin_checked="1">
+            <h5 style="background: #772B91 !important;" class="bk-org title">
+                মহাপরিচালক            </h5>
+            <p style="text-align:center">
+                <img alt="
+                মহাপরিচালক            " src="./res_files/important_persons_photo_1685769721_2023-06-03.jpg" style="height:100%; width:220px">
+            </p>
+            <p style="text-align:center">
+                <strong>
+                                        <a style="color:#000000;font-family:inherit; font-size:20px" target="_blank" href="http://service.dte.gov.bd/download/DG_DTE_Final.pdf" title="
+    মোঃ মহসিন,
+                        
+                                                
+                    " bis_skin_checked="1">
+    মোঃ মহসিন,
+                        <span style="font-family:inherit; font-size:14px">
+                                                </span>
+                    </a>
+                </strong>
+            </p>
+            <p style="text-align:center;background-color: #78787f;">
+                <a style="color:#fff;font-family:inherit; font-size:20px;text-decoration: underline;" target="_blank" href="http://service.dte.gov.bd/download/DG_DTE_Final.pdf" title="
+                    
+    বিস্তারিত                    
+                " bis_skin_checked="1">
+                    <span style="font-family:inherit; font-size:14px">
+    বিস্তারিত                    </span>
+                </a>
+            </p>
+
+        </div>
+
+
+
+
+    <!-- head_message -->
+    <div class="column block" bis_skin_checked="1">
+        <h5 style="background: #772B91 !important;" class="bk-org title">
+অধ্যক্ষ        </h5>
+        <p style="text-align:center">
+            <img alt="
+অধ্যক্ষ        " src="./res_files/Head_1641794572_2022-01-10.png" style="height:100%; width:220px">
+        </p>
+        <p style="text-align:center">
+            <strong>
+                <a style="color:#000000;font-family:inherit; font-size:20px;" href="https://satkhiratsc.gov.bd/homes/getHeadteacherMessage" title="
+প্রকৌঃ মোঃ মশিউর রহমান                " bis_skin_checked="1">
+প্রকৌঃ মোঃ মশিউর রহমান                </a>
+            </strong>
+        </p>
+    </div>
+    <!--end head_message -->
+    <!-- president_message -->
+                            <!--end president_message -->
+
+
+    <div class="column block right-block" bis_skin_checked="1">
+        <a href="https://satkhiratsc.gov.bd/200391/service/index" title="
+           
+               ই-সার্ভিস সেন্টার           
+        " bis_skin_checked="1">
+           <h5 style="background: #772B91 !important;" class="bk-org title">
+               ই-সার্ভিস সেন্টার           </h5>
+        </a>
+    </div>
+
+
+    <!-- extra_messages -->
+                                <!--end extra_messages -->
+
+    <!-- Welcome Message -->
+                    <!--end Welcome Message -->
+        <div class="column block right-block" bis_skin_checked="1">
+            <h5 style="background: #772B91 !important;" class="bk-org title"> আমাদের সাথে থাকুন </h5>
+    <iframe src="./res_files/page.html" width="300" height="250" style="border:none;overflow:hidden" scrolling="no" frameborder="0" allowtransparency="true" allow="encrypted-media" bis_size="{&quot;x&quot;:934,&quot;y&quot;:1002,&quot;w&quot;:300,&quot;h&quot;:250,&quot;abs_x&quot;:934,&quot;abs_y&quot;:1002}"></iframe>        </div>
+
+
+
+    <div class="column block right-block" bis_skin_checked="1">
+        <h5 style="background: #772B91 !important;" class="bk-org title"> গুরুত্বপূর্ণ লিঙ্ক </h5>
+                            <ul>
+                                        <li>
+                                <a target="_blank" href="https://satkhiratsc.gov.bd/online_admissions/index" title="
+                অনলাইন ভর্তির আবেদন                                " bis_skin_checked="1">
+                অনলাইন ভর্তির আবেদন                                </a>
+                            </li>
+                                        <li>
+                                <a target="_blank" href="https://satkhiratsc.gov.bd/bteb.gov.bd.com" title="
+                বাংলাদেশ কারিগরি শিক্ষা বোড                                " bis_skin_checked="1">
+                বাংলাদেশ কারিগরি শিক্ষা বোড                                </a>
+                            </li>
+                                        <li>
+                                <a target="_blank" href="http://service.dte.gov.bd/dte_hr/employee/index.php" title="
+                HRMIS                                " bis_skin_checked="1">
+                HRMIS                                </a>
+                            </li>
+                                        <li>
+                                <a target="_blank" href="https://satkhiratsc.gov.bd/www.techedu.gov.bd" title="
+                কারিগরি শিক্ষা অধিদপ্তর                                " bis_skin_checked="1">
+                কারিগরি শিক্ষা অধিদপ্তর                                </a>
+                            </li>
+                                        <li>
+                                <a target="_blank" href="https://satkhiratsc.gov.bd/www.tmed.gov.bd" title="
+                Technical and Madrasah Education Division                                " bis_skin_checked="1">
+                Technical and Madrasah Education Division                                </a>
+                            </li>
+                                </ul>
+            </div>
+
+
+
+    <style>
+
+        sup {
+            font-size:xx-small;
+            vertical-align:super;
+        }
+        .static_img_add img {
+            float:none!important
+        }
+    </style>
+    <!-- <script>
+    $(function(){
+    $("#slideshow > div:gt(0)").hide();
+    setInterval(function() {
+      $('#slideshow > div:first')
+        .hide('slow')
+        .next()
+        .show('slow')
+        .end()
+        .appendTo('#slideshow');
+    },  3000);
+    });</script> -->
+
+    <style>
+        .right-block h5 {
+            background-attachment: scroll;
+            background-clip: border-box;
+            background-color: rgba(0, 0, 0, 0);
+            background-origin: padding-box;
+            background-position-x: 0px;
+            background-position-y: 0px;
+            background-repeat: no-repeat;
+            background-size: cover;
+            margin-top: 0;
+            padding-left: 35px !important;
+            border: 1px solid #ccc;
+            color: #683091;
+            font-weight: bold;
+        }
+
+        .right-block h5.inno_title{
+            background-image: url("https://satkhiratsc.gov.bd/core_media/themes/responsive_npf/images/innovation_corner.jpg");
+        }
+        .right-block h5.inno_title > a{
+            color: #683091;
+        }
+
+        .right-block h5.feed_title{
+            background-image: url("https://satkhiratsc.gov.bd/core_media/themes/responsive_npf/images/feedback_portal.jpg");
+        }
+        .right-block h5.feed_title > a{
+            color: #683091;
+        }
+        .right-block h5.social_title{
+            background-image: url("https://satkhiratsc.gov.bd/core_media/themes/responsive_npf/images/social_media_corner.jpg");
+            color: #683091 !important;
+        }
+    </style>
+    <div class="column block" bis_skin_checked="1">
+        <h5 style="background: #772B91 !important;" class="bk-org title"> জরুরী হটলাইন </h5>
+        <p><img alt=" জরুরী হটলাইন " src="./res_files/National-Helpline.jpg" style="height:100%; width:220px"></p>
+    </div>
+
+    <div class="column block" bis_skin_checked="1">
+        <h5 style="background: #772B91 !important;" class="bk-org title">
+            করোনা ভাইরাস প্রতিরোধে যোগাযোগ        </h5>
+        <p>
+            <a href="http://corona.gov.bd/" target="_blank" title="" bis_skin_checked="1"><img alt="
+            করোনা ভাইরাস প্রতিরোধে যোগাযোগ        " src="./res_files/corona_new.jpg" style="border-style:solid; border-width:1px; width:100%"></a>
+        </p>
+        <p>&nbsp;</p>
+        <!-- <p><iframe frameborder="0" src="https://www.youtube.com/embed/GVPJHDp29tg" width="100%"></iframe></p> -->
+    </div>
+
+    <div class="column block" bis_skin_checked="1">
+        <h5 style="background: #772B91 !important;" class="bk-org title">
+করোনা ট্রেসার বিডি        </h5>
+        <p>
+            <a href="https://bit.ly/coronatracerbd" target="_blank" title="" bis_skin_checked="1" bis_size="{&quot;x&quot;:1159,&quot;y&quot;:3838,&quot;w&quot;:0,&quot;h&quot;:0,&quot;abs_x&quot;:1159,&quot;abs_y&quot;:3838}"><img alt="
+করোনা ট্রেসার বিডি        " src="./res_files/Corona-Teaser-BD-card-.jpg" style="border-style:solid; width:100%" bis_size="{&quot;x&quot;:934,&quot;y&quot;:3838,&quot;w&quot;:220,&quot;h&quot;:220,&quot;abs_x&quot;:934,&quot;abs_y&quot;:3838}" bis_id="bn_q8pduqdb0fgx3egqh2ai9r"></a>
+        </p>
+    </div>
+
+    <div class="column block" bis_skin_checked="1">
+        <h5 style="background: #772B91 !important;" class="bk-org title">
+জাতীয় সংগীত        </h5>
+        <audio controls="" style="width:100%" __idm_id__="106497">
+            <source src="https://satkhiratsc.gov.bd/core_media/themes/responsive_npf/audio/bd_national_anthem.mp3" type="audio/mp3">
+        </audio>
+    </div>
+
+    <div class="column block" bis_skin_checked="1">
+        <h5 style="background: #772B91 !important;" class="bk-org title">
+ডেঙ্গু প্রতিরোধে করণীয়ি        </h5>
+        <p>
+            <a href="https://bangladesh.gov.bd/site/page/91530698-c795-4542-88f2-5da1870bd50c" target="_blank" title="
+                
+            " bis_skin_checked="1">
+                <img alt="
+ডেঙ্গু প্রতিরোধে করণীয়ি        " src="./res_files/dengu.jpg" style="height:200px; width:220px">
+            </a>
+        </p>
+    </div>
+</div>
+</div>
+
+</div>
+<!-- container -->
+<style>
+.footer-wrapper {
+    background-color: #EBEBEB !important;
+}
+</style>
+
+<div class="footer-artwork" id="footer-artwork" bis_skin_checked="1">&nbsp;</div>
+	<div class="footer-wrapper full-width" id="footer-wrapper" bis_skin_checked="1">
+		<div id="footer-menu" style="" bis_skin_checked="1">
+        <span style="font-weight: bold;">সাতক্ষীরা সরকারি টেকনিক্যাল স্কুল ও কলেজ </span>
+        <br>
+        <span>কাটিয়া আমতলা, খুলনা- সাতক্ষীরা রোড, সাতক্ষিরা </span>
+        <br>
+        <span>০৪৭১৬২৩৬৬</span>
+        <br>
+        <span>stsc76@yahoo.com</span>
+
+    </div>
+		<div class="footer-credit" id="footer" bis_skin_checked="1">
+			<ul>
+				<li class=""><i class="bx bx-chevron-right"></i> <a style="" href="https://satkhiratsc.gov.bd/homes" title="প্রথম পাতা" bis_skin_checked="1">প্রথম পাতা</a></li>
+				<li class=""><i class="bx bx-chevron-right"></i> <a style="" href="https://satkhiratsc.gov.bd/homes/getAboutInfo" title="আমাদের সম্পর্কে" bis_skin_checked="1">আমাদের সম্পর্কে</a></li>
+				<li class=""><i class="bx bx-chevron-right"></i> <a style="" href="https://satkhiratsc.gov.bd/homes/getHistoryInfo" title="ইতিহাস" bis_skin_checked="1">ইতিহাস</a></li>
+				<li class=""><i class="bx bx-chevron-right"></i> <a style="" href="https://satkhiratsc.gov.bd/homes/getAllNoticeInfo" title="বিজ্ঞপ্তি" bis_skin_checked="1">বিজ্ঞপ্তি</a></li>
+				<!-- <li class=""><i class="bx bx-chevron-right"></i> <a href="https://satkhiratsc.gov.bd/homes/student_code_search">আইডি অনুসন্ধান</a></li> -->
+				<li class=""><i class="bx bx-chevron-right"></i> <a style="" href="https://satkhiratsc.gov.bd/homes/getContactInfo" title="যোগাযোগ" bis_skin_checked="1">যোগাযোগ</a></li>
+			</ul>
+    </div>
+
+
+	</div>
+	<!-- <footer  id="footer-div"> -->
+	<div class="footer-wrapper full-width" bis_skin_checked="1">
+		<div class="copyright" style="text-align: center;padding-top: 35px;" bis_skin_checked="1">
+			কপিরাইট © 2015-2023, সর্বস্বত্ব সংরক্ষিত, সাতক্ষীরা সরকারি টেকনিক্যাল স্কুল ও কলেজ  <br>
+			কারিগরি সহযোগিতায় - 			<a target="_blank" href="https://school360.com.bd/" title="
+				School360
+			" bis_skin_checked="1">
+				<span style="color:#0059b3;">School</span><span style="color:#ff8080;">360</span>
+			</a>
+			<br>
+			<a target="_blank" href="https://spatei.com/" title="
+				(স্পেট ইনিশিয়েটিভ লিমিটেডের একটি পণ্য)
+			" bis_skin_checked="1">
+				<span style="font-size: 11px;">(স্পেট ইনিশিয়েটিভ লিমিটেডের একটি পণ্য)</span>
+			</a><br>
+			<img style="width: 15%;" src="./res_files/footer_logo.png" alt="footer_logo">
+		</div>
+	</div>
+<!-- </footer> -->
+<script src="./res_files/facnybox.min.js.download"></script>
+<script>
+$(document).ready(function(){
+						$(".yoxview").yoxview();
+				});
+</script>
+<script>
+			$(function(){
+			$("#slideshow > div:gt(0)").hide();
+			setInterval(function() {
+			  $('#slideshow > div:first')
+			    .hide('slow')
+			    .next()
+			    .show('slow')
+			    .end()
+			    .appendTo('#slideshow');
+			},  3000);
+			});
+</script>
+  <script>
+    function setLanguageCookie(cookieValue) {
+        var today = new Date();
+        var expire = new Date();
+        var cookieName = 'lang';
+        //var cookieValue = "bn";
+        var nDays = 5;
+        expire.setTime(today.getTime() + 3600000 * 24 * nDays);
+        document.cookie = cookieName + "=" + escape(cookieValue) +
+            ";expires=" + expire.toGMTString();
+    }
+
+    function setLanguage() {
+        $("#lang_form").submit();
+        return false;
+    }
+
+    $(function () {
+
+        // Slideshow 4
+        $("#front-image-slider").responsiveSlides({
+            auto: true,
+            pager: false,
+            nav: true,
+            speed: 2000,
+            maxwidth: 960,
+            namespace: "callbacks"
+        });
+        $("#right-content a").click(function () {
+            var url = $(this).attr('href');
+            if (isExternal(url) && url != 'javascript:;') {
+                openInNewTab(url);
+                return false;
+            }
+        });
+    });
+
+    function openInNewTab(url) {
+        var win = window.open(url, '_blank');
+        win.focus();
+    }
+
+    function isExternal(url) {
+        var match = url.match(/^([^:\/?#]+:)?(?:\/\/([^\/?#]*))?([^?#]+)?(\?[^#]*)?(#.*)?/);
+        if (typeof match[1] === "string" && match[1].length > 0 && match[1].toLowerCase() !== location.protocol)
+            return true;
+        if (typeof match[2] === "string" && match[2].length > 0 && match[2].replace(new RegExp(":(" + {
+                "http:": 80,
+                "https:": 443
+            }[location.protocol] + ")?$"), "") !== location.host)
+            return true;
+        return false;
+    }
+</script>
+
+
+
+<script>
+    $(function () {
+
+
+        function initNewsTicker(id, options) {
+
+            var $scroller = $(id);
+            $scroller.vTicker('init', options);
+
+            $("#news-ticker .next").click(function (event) {
+                event.preventDefault();
+                var checked = true;
+                $('#news-ticker').vTicker('next', {
+                    animate: checked
+                });
+            });
+            $("#news-ticker .prev,#news-ticker .next").hover(function () {
+                $('#news-ticker').vTicker('next', {
+                    animate: checked
+                });
+                $scroller.vTicker('pause', true);
+            }, function () {
+                $('#news-ticker').vTicker('next', {
+                    animate: checked
+                });
+                $scroller.vTicker('pause', false);
+            });
+            $("#news-ticker .prev").click(function (event) {
+                event.preventDefault();
+                var checked = true;
+                $('#news-ticker').vTicker('prev', {
+                    animate: checked
+                });
+            });
+        }
+
+        function initNoticeBoardTicker(id, options) {
+
+            var $scroller = $(id);
+            $scroller.vTicker('init', options);
+
+            $("#notice-board-ticker .next").click(function (event) {
+                event.preventDefault();
+                var checked = true;
+                $('#notice-board-ticker').vTicker('next', {
+                    animate: false
+                });
+            });
+            $("#notice-board-ticker .prev,#notice-board-ticker .next").hover(function () {
+                $scroller.vTicker('pause', true);
+            }, function () {
+                $scroller.vTicker('pause', false);
+            });
+            $("#notice-board-ticker .prev").click(function (event) {
+                event.preventDefault();
+                var checked = true;
+                $('#notice-board-ticker').vTicker('prev', {
+                    animate: checked
+                });
+            });
+        }
+
+        initNewsTicker('#news-ticker', {});
+        //initNoticeBoardTicker('#notice-board-ticker', {showItems:10, margin: 0, padding: 0,animate:false});
+
+
+    });
+
+
+    /* Responsive Menu*/
+</script>
+
+
+<!-- Matomo -->
+<!-- <script type="text/javascript">
+    var _paq = _paq || [];
+
+    _paq.push(['trackPageView']);
+    _paq.push(['enableLinkTracking']);
+    (function () {
+        var u = "https://analytics.portal.gov.bd/piwik/";
+        _paq.push(['setTrackerUrl', u + 'piwik.php']);
+        _paq.push(['setSiteId', 118]);
+        var d = document,
+            g = d.createElement('script'),
+            s = d.getElementsByTagName('script')[0];
+        g.type = 'text/javascript';
+        g.async = true;
+        g.defer = true;
+        g.src = u + 'piwik.js';
+        s.parentNode.insertBefore(g, s);
+    })();
+</script> -->
+<!-- End Matomo Code -->
+
+
+<script>
+    $(".meganizr .mzr-drop").keyup(function () {
+
+        $(".mzr-content").attr("aria-hidden", "true");
+        $(this).find(".mzr-content").attr("aria-hidden", "false");
+    });
+    // ============ start tile for <a> and alt for img ========
+    $('a').each(function () {
+        $(this).attr('title', $(this).text());
+    });
+
+    var lan = "bn";
+    if (lan == 'en') {
+        $('.mzr-drop a:first-child').each(function () {
+            $(this).attr('title', "Enter to get more menu");
+        });
+    } else {
+        $('.mzr-drop a:first-child').each(function () {
+            $(this).attr('title', "সাবমেনুর জন্য ক্লিক করুন");
+        });
+    }
+    $('img').each(function () {
+        var str = $(this).attr("src");
+        var arr = str.split('/');
+        var strFine = arr[arr.length - 1];
+
+        var str2 = strFine;
+        var arr2 = str2.split('.');
+        var strFine2 = arr2[arr2.length - 2];
+        $(this).attr('alt', strFine2);
+    });
+    $('a2iLogo').attr('alt', 'Access to information');
+    $('.service-box img').each(function () {
+        var strTitle = $(this).parent().find('h4').text();
+        $(this).attr('alt', strTitle);
+    });
+    $('.block img').each(function () {
+        var strTitleRight = $(this).closest('.block').find('.title').text();
+        $(this).attr('alt', strTitleRight);
+    });
+    $('#notice-board-ticker .btn').attr('title', 'সকল নোটিশ');
+    $('#news-ticker .btn').attr('title', 'সকল খবর');
+    $('#search').each(function () {
+        $(this).attr('alt', 'Search');
+    });
+    $('.search-btn').each(function () {
+        $(this).attr('alt', 'Enter to search');
+    });
+
+
+    $(".chzn-select").bind('change', function () {
+        if ($(this).val() === "undefined" || $(this).val() !== '-') {
+            window.location.href = $(this).val();
+        }
+    });
+</script>
+
+<script>
+    $(document).ready(function () {
+        $(".slide-panel-button").click(function () {
+            $('#domain-selector-panel').toggle() //animate({height: "toggle"}, 200);
+            if ($('#domain-selector-panel').is(":visible")) {
+                $('#div-lang').css('z-index', '200');
+            } else {
+                $('#div-lang').css('z-index', '1001');
+            }
+            $(".slide-panel-button").toggle();
+        });
+
+    });
+</script>
+
+
+
+
+
+<!-- ============ start accessibility megamenu ============ -->
+
+
+
+<script>
+    $(document).ready(function () {
+        var wi = $(window).width();
+        if (wi < 769) {
+            $('#printable_area td').removeAttr('style');
+            $('#printable_area td p').css("width", "100%");
+        }
+    });
+    $(".meganizr .mzr-drop").keyup(function () {
+
+        $(".mzr-content").attr("aria-hidden", "true");
+        $(this).find(".mzr-content").attr("aria-hidden", "false");
+    });
+    // ============ start tile for <a> and alt for img ========
+    $('a').each(function () {
+        $(this).attr('title', $(this).text());
+    });
+
+    var lan = "bn";
+    if (lan == 'en') {
+        $('.mzr-drop a:first-child').each(function () {
+            $(this).attr('title', "Enter to get more menu");
+        });
+    } else {
+        $('.mzr-drop a:first-child').each(function () {
+            $(this).attr('title', "সাবমেনুর জন্য ক্লিক করুন");
+        });
+    }
+    $('img').each(function () {
+        var str = $(this).attr("src");
+        var arr = str.split('/');
+        var strFine = arr[arr.length - 1];
+
+        var str2 = strFine;
+        var arr2 = str2.split('.');
+        var strFine2 = arr2[arr2.length - 2];
+        $(this).attr('alt', strFine2);
+    });
+    $('a2iLogo').attr('alt', 'Access to information');
+    $('.service-box img').each(function () {
+        var strTitle = $(this).parent().find('h4').text();
+        $(this).attr('alt', strTitle);
+    });
+    $('.block img').each(function () {
+        var strTitleRight = $(this).closest('.block').find('.title').text();
+        $(this).attr('alt', strTitleRight);
+    });
+    $('#notice-board-ticker .btn').attr('title', 'সকল নোটিশ');
+    $('#news-ticker .btn').attr('title', 'সকল খবর');
+    $('#search').each(function () {
+        $(this).attr('alt', 'Search');
+    });
+    $('.search-btn').each(function () {
+        $(this).attr('alt', 'Enter to search');
+    });
+    // ============ end tile for <a> and alt for img ========
+</script>
+    
+
+<div id="yoxview_popupWrap" bis_skin_checked="1" style="background-color: rgba(0, 0, 0, 0.8);"><div id="yoxview" bis_skin_checked="1"><div classname="yoxview_imgPanel" bis_skin_checked="1" style="z-index: 2;"><img classname="yoxview_fadeImg" style="display: block; width: 100%; height: 100%;"></div><div classname="yoxview_imgPanel" bis_skin_checked="1" style="z-index: 1; display: none;"><img classname="yoxview_fadeImg" style="display: block; width: 100%; height: 100%;"></div><div classname="yoxview_popupBarPanel yoxview_top" bis_skin_checked="1"><div id="yoxview_menuPanel" bis_skin_checked="1"><a href="https://satkhiratsc.gov.bd/#"><span style="opacity: 0;">Close</span><img src="./res_files/empty.gif" alt="close" style="width: 18px; height: 18px; background-image: url(&quot;https://satkhiratsc.gov.bd/core_media/themes/responsive_npf/js/yoxview/images/sprites.png&quot;); background-repeat: no-repeat; background-position: 0px -59px;"></a><a href="https://satkhiratsc.gov.bd/#"><span style="opacity: 0;">Help</span><img src="./res_files/empty.gif" alt="help" style="width: 18px; height: 18px; background-image: url(&quot;https://satkhiratsc.gov.bd/core_media/themes/responsive_npf/js/yoxview/images/sprites.png&quot;); background-repeat: no-repeat; background-position: -18px -59px;"></a><a href="https://satkhiratsc.gov.bd/#" class="last"><span style="opacity: 0;">Play</span><img src="./res_files/empty.gif" alt="play" style="width: 18px; height: 18px; background-image: url(&quot;https://satkhiratsc.gov.bd/core_media/themes/responsive_npf/js/yoxview/images/sprites.png&quot;); background-repeat: no-repeat; background-position: -108px -59px;"></a></div></div><a classname="yoxview_ctlBtn" href="https://satkhiratsc.gov.bd/#" style="background: url(&quot;https://satkhiratsc.gov.bd/core_media/themes/responsive_npf/js/yoxview/images/left.png&quot;) left center no-repeat; opacity: 0; outline: 0px; left: 0px;"></a><a classname="yoxview_ctlBtn" href="https://satkhiratsc.gov.bd/#" style="background: url(&quot;https://satkhiratsc.gov.bd/core_media/themes/responsive_npf/js/yoxview/images/right.png&quot;) right center no-repeat; opacity: 0; outline: 0px; right: 0px;"></a><div id="yoxview_ajaxLoader" classname="yoxview_notification" bis_skin_checked="1" style="display: none;"><img src="./res_files/popup_ajax_loader.gif" alt="Loading" style="width: 32px; height: 32px; background-image: url(&quot;https://satkhiratsc.gov.bd/core_media/themes/responsive_npf/js/yoxview/images/sprites.png&quot;); background-position: 0px 0px;"></div><img classname="yoxview_notification"><div id="yoxview_helpPanel" href="#" title="Close help" bis_skin_checked="1" style="background: url(&quot;https://satkhiratsc.gov.bd/core_media/themes/responsive_npf/js/yoxview/images/help_panel.png&quot;) center top no-repeat; direction: ltr; opacity: 0;"><h1>HELP</h1><p>The gallery can be navigated using the keyboard:<br><br>LEFT/RIGHT ARROWS: Prev/Next<br>SPACEBAR: Next<br>ENTER: Start/Stop slideshow<br>ESCAPE: Close gallery<br>HOME/END: First/Last image<br>H - This help panel</p><span id="yoxview_closeHelp">Close help</span></div><div classname="yoxview_popupBarPanel yoxview_bottom" bis_skin_checked="1"><div id="yoxview_infoPanel" bis_skin_checked="1" style="background-color: rgba(0, 0, 0, 0.5);"><span id="yoxview_count"></span><a classname="yoxviewInfoLink" href="https://satkhiratsc.gov.bd/#" title="Pin info" style="display: inline;"><img src="./res_files/empty.gif" alt="pin" style="width: 18px; height: 18px; background-image: url(&quot;https://satkhiratsc.gov.bd/core_media/themes/responsive_npf/js/yoxview/images/sprites.png&quot;); background-repeat: no-repeat; background-position: -72px -59px;"></a><a classname="yoxviewInfoLink" target="_blank" title="View in original context"><img src="./res_files/empty.gif" alt="link" style="width: 18px; height: 18px; background-image: url(&quot;https://satkhiratsc.gov.bd/core_media/themes/responsive_npf/js/yoxview/images/sprites.png&quot;); background-repeat: no-repeat; background-position: -54px -59px;"></a><div id="yoxview_infoText" bis_skin_checked="1"></div></div></div></div></div><div id="site-usage-rating" bis_skin_checked="1" style="position: fixed; width: 80px; height: 80px; bottom: 40px; right: 40px; color: black; border-radius: 50px; text-align: center; z-index: 9999; font-size: 13px; padding: 6px; font-family: monospace; line-height: 15px; overflow-wrap: normal; background-color: green; opacity: 0;">Site Malicious Rate<br><b>0.0</b></div></body><grammarly-desktop-integration data-grammarly-shadow-root="true"><template shadowrootmode="open"><style>
+  div.grammarly-desktop-integration {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+    -moz-user-select: none;
+    -webkit-user-select: none;
+    -ms-user-select:none;
+    user-select:none;
+  }
+
+  div.grammarly-desktop-integration:before {
+    content: attr(data-content);
+  }
+</style><div aria-label="grammarly-integration" role="group" tabindex="-1" class="grammarly-desktop-integration" data-content="{&quot;mode&quot;:&quot;full&quot;,&quot;isActive&quot;:true,&quot;isUserDisabled&quot;:false}"></div></template></grammarly-desktop-integration></html>
