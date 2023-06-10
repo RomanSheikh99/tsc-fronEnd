@@ -7,7 +7,7 @@ const Main = () => {
   return (
     <Container style={{marginTop: '20px'}}>
       <Row>
-        <Col xs={12} md={10} >
+        <Col xs={12} md={9} >
           <Large />
         </Col>
         <Col>

@@ -6,7 +6,6 @@ const SingleVieoGallery = ({video}) => {
     return (
         <Col sm={6}>
         <div className="singleService">
-          <h3 className="title"></h3>
           <Row>
             <Col sm={2}>
            {youtubeVideo}

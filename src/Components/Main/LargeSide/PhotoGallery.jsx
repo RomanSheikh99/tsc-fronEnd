@@ -24,7 +24,7 @@ const PhotoGallery = () => {
                 })}
             </Row>
         </div>
-        <div className="noticeBtn">
+        <div className="noticeBtn mb-4">
                     <Button>Explore More</Button>
                 </div>
         </div>

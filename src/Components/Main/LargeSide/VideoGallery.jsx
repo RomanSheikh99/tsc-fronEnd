@@ -5,12 +5,12 @@ import SingleVieoGallery from './SingleVieoGallery';
 const VideoGallery = () => {
     const videos = [
         {
-            youtubeVideo: <iframe width="350" height="250" src="https://www.youtube.com/embed/tgbNymZ7vqY">
+            youtubeVideo: <iframe width="310" height="250" src="https://www.youtube.com/embed/tgbNymZ7vqY">
             </iframe>,
 
         },
         {
-            youtubeVideo: <iframe width="350" height="250" src="https://www.youtube.com/embed/tgbNymZ7vqY">
+            youtubeVideo: <iframe width="310" height="250" src="https://www.youtube.com/embed/tgbNymZ7vqY">
             </iframe>
         }
     ]
