@@ -10,11 +10,49 @@ const SiteNav = () => {
       title: "About",
       dropdown: [
         { id: 1, title: "History", link: "/history" },
-        { id: 2, title: "Principal", link: "/principal" },
-        { id: 3, title: "Teacher", link: "/teacher" },
-        { id: 4, title: "Staff", link: "/satff" },
-        { id: 5, title: "Student", link: "/student" },
+        { id: 2, title: "All Headmaster", link: "/principal" },
+        { id: 3, title: "Teacher's Information", link: "/teacher" },
+        { id: 4, title: "Others Staff", link: "/satff" },
+        { id: 5, title: "All student Information", link: "/student" },
+        { id: 5, title: "Rules And Regulation", link: "/rules" },
       ],
+    },
+    {
+      id: 3,
+      title: "Academic",
+      dropdown: [
+        { id: 1, title: "All Success student Information", link: "/history" },
+      ],
+    },
+    {
+      id: 4,
+      title: "Result",
+      dropdown: [
+        { id: 1, title: "Result Download", link: "/history" },
+        { id: 2, title: "Grand Final", link: "/history" },
+        { id: 3, title: "Combined Result", link: "/history" },
+      ],
+    },
+    {
+      id: 5,
+      title: "Admission",
+      dropdown: [
+        { id: 1, title: "Apply Online", link: "/history" },
+        { id: 2, title: "Payment", link: "/history" },
+        { id: 3, title: "Admit Card", link: "/history" },
+      ],
+    },
+    {
+      id: 6,
+      title: "Instruction from Institute",
+    },
+    {
+      id: 7,
+      title: "Informaton ",
+    },
+    {
+      id: 8,
+      title: "Contact",
     },
   ];
 
