@@ -11,3 +11,70 @@
   max-width: 1000px;
   margin: 0 auto;
 }
+/* common button */
+.noticeBtn{
+  display: flex;
+  justify-content: end;
+}
+.noticeBtn button {
+  background-color: purple;
+  color: white;
+  padding:10px 25px;
+  border: none;
+}
+.noticeBtn button:hover {
+  background-color: purple;
+  color: white;
+  padding:10px 25px;
+  border: none;
+}
+/* Video gallery style */
+.video-title{
+  background-color: purple;
+  padding:7px;
+  font-size: 20px;
+  color: white;
+}
+
+/* person section  from small side*/
+.person-name,.person-title, .person-link, .e-service-header{
+  padding: 5px;
+  font-size: 1.2em;
+  overflow: hidden;
+  font-weight: bold;
+  margin-bottom: 10px;
+  background-color: #772B91;
+  color: white;
+  text-align: center;
+  font-size: 17px;
+}
+.person-title{
+  background-color: white;
+  color: #1D1D1D;
+}
+.person-link{
+  background-color: #78787F;
+ 
+}
+.person-link a{
+  color: white;
+}
+
+/* important link from small side */
+.important-link ul li{
+  font-size: 120%;
+  height: auto;
+  list-style-type: none;
+  margin-bottom: 5px;
+  padding-left: 32px;
+  padding-top: 0px;
+  padding-bottom: 8px;
+  background-position: bottom;
+  
+}
+.important-link ul li a{
+  color: #676767;
+  font-size: 16px;
+}
+
+
