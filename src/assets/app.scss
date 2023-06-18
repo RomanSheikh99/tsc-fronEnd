@@ -1,0 +1,49 @@
+@import url("./bennar.scss");
+@import url("./headLine.scss");
+@import url("./notisBoard.scss");
+@import url("./news.scss");
+@import url("./singleservice.scss");
+@import url("./videoGallery.scss");
+@import url("./person.scss");
+@import url("./importentLink.scss");
+@import url("./footer.scss");
+
+
+* {
+    padding: 0;
+    margin: 0;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+#app {
+    background: url('image/bg_main.gif');
+    background-position: center;
+
+    .content {
+        max-width: 1000px;
+        margin: 0 auto;
+
+        .noticeBtn {
+            display: flex;
+            justify-content: end;
+
+            button {
+                background-color: purple;
+                color: white;
+                padding: 10px 25px;
+                border: none;
+            }
+
+            button:hover {
+                background-color: purple;
+                color: white;
+                padding: 10px 25px;
+                border: none;
+            }
+        }
+
+    }
+}
