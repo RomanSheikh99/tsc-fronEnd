@@ -1,0 +1,25 @@
+.notisBoard{
+    background: linear-gradient(180deg, transparent,#F5F5F5), url('image/bg_notice_board.png');
+    background-repeat: no-repeat;
+
+    .notissec{
+        padding: 20px 100px;
+        padding-bottom: 0;
+
+        .noticeTitle{
+            text-transform: capitalize;
+            font-size: 28px;
+
+           
+        }
+
+        .noticeList{
+            list-style: none;
+        }
+    }
+    .noticeBtn {
+        padding: 10px;
+        display: flex;
+        justify-content: end;
+    }
+}

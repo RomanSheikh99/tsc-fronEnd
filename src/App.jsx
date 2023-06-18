@@ -1,22 +1,16 @@
+import React from 'react';
 import { RouterProvider } from "react-router";
-import Router from "./Routers/Routers";
-import "./App.css";
+import Route from "./routers/Route";
+import "./assets/app.scss";
 
-function App() {
-  const app = {
-    background: "url('assets/image/bg_main.gif')",
-    backgroundPosition: "center"
-
-  }
+const App = () => {
   return (
-    <>
-      <div id="app" style={app}>
-        <div className="content">
-          <RouterProvider router={Router}> </RouterProvider>
-        </div>
-      </div>
-    </>
+    <div id="app">
+    <div className="content">
+      <RouterProvider router={Route}> </RouterProvider>
+    </div>
+  </div>
   );
-}
+};
 
 export default App;
