@@ -1,13 +1,13 @@
 import React from 'react';
-import AdminLayout from '../layouts/AdminLayout';
+import DashboardLayout from '../layouts/DashboardLayout';
 
 const DashboardTeachers = () => {
     return (
-        <AdminLayout >
+        <DashboardLayout >
             <div>
-            <h2> Teachers </h2>
+               <h2> Teachers </h2>
             </div>
-        </AdminLayout>
+        </DashboardLayout>
     );
 };
 

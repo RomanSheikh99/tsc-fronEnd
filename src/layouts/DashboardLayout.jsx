@@ -1,11 +1,10 @@
 import React, { Children } from 'react';
 import { Col,  Row } from 'react-bootstrap';
-import '../assets/adminlayout.scss'
+import '../assets/DashboardLayout.scss'
 import AdminHeader from '../Components/AdminHeader';
 import AdminSideNav from '../Components/AdminSideNav';
-import DashboardNews from '../pages/DashboardNews';
 
-const AdminLayout = ({children}) => {
+const DashboardLayout = ({children}) => {
     return (
         <div id='admin-layout'>
           <div id={"adminContainer"} >
@@ -23,4 +22,4 @@ const AdminLayout = ({children}) => {
     );
 };
 
-export default AdminLayout;
+export default DashboardLayout;

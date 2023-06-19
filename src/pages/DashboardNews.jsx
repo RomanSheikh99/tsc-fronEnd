@@ -1,14 +1,17 @@
-import React from 'react';
-import AdminLayout from '../layouts/AdminLayout';
+import  React  from 'react';
+import DashboardLayout from '../layouts/DashboardLayout';
+import CreateNewsModal from '../Components/CreateNewsModal'
 
 const DashboardNews = () => {
-    return (
-        <AdminLayout>
-            <div>
-            <h2> All News  </h2>
 
-            </div>
-        </AdminLayout>
+    return (
+        <DashboardLayout>
+            {/* Create News Header section start  */}
+            <section className='createnews-header'>
+              <h2> All News  </h2>
+              <CreateNewsModal/>
+            </section>
+        </DashboardLayout>
     );
 };
 

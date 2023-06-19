@@ -1,6 +1,6 @@
 import React from 'react';
 import moment from "moment/moment";
-import '../assets/adminlayout.scss'
+import '../assets/DashboardLayout.scss'
 import { Button, Card,  Nav, Navbar } from "react-bootstrap";
 
 const AdminHeader = () => {
